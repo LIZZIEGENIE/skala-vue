@@ -63,7 +63,8 @@ Vue 3의 Composition API, 컴포넌트, Vue Router, Pinia, Axios를 활용하여
 - API Key를 소스 코드에서 제거하고 Vite 환경 변수로 이동했습니다.
 - `.env.local`은 Git에서 제외하고 빈 변수 양식인 `.env.example`만 제출하도록 구성했습니다.
 - `npm run lint`, `npm run build`, `npm run preview` 순서로 품질과 정적 결과물을 검증했습니다.
-- Build 결과물인 `dist/` 폴더를 GitHub Pages에 수동으로 Hosting할 예정입니다.
+- Build 결과물인 `dist/`를 Git에 올리지 않고 GitHub Actions에서 Build하여 GitHub Pages에 배포합니다.
+- Push 자동 배포 대신 Actions 화면에서 직접 실행하는 수동 배포 Workflow를 구성했습니다.
 
 ## 사용 Library
 
@@ -356,7 +357,7 @@ npm run lint
 npm run build
 ```
 
-Build 결과는 `dist/` 폴더에 생성됩니다. 배포 서버에는 소스 전체가 아니라 `dist/` 내부의 정적 파일을 Hosting 합니다. Vue Router의 동적 경로를 직접 열어도 동작하려면 서버에서 존재하지 않는 경로를 `index.html`로 연결하는 SPA fallback 설정이 필요합니다.
+Build 결과는 `dist/` 폴더에 생성됩니다. `dist/`는 `.gitignore`로 제외되며, GitHub Actions가 배포할 때 새로 Build하여 GitHub Pages Artifact로 사용합니다.
 
 배포 전 로컬에서 Build 결과를 확인합니다.
 
@@ -364,7 +365,7 @@ Build 결과는 `dist/` 폴더에 생성됩니다. 배포 서버에는 소스 �
 npm run preview
 ```
 
-배포 서비스의 환경 변수 설정에도 다음 이름을 동일하게 등록한 다음 새로 Build해야 합니다.
+로컬 `.env.local`과 GitHub Repository Secrets에는 다음 이름을 동일하게 사용합니다.
 
 ```env
 VITE_OPENWEATHER_API_KEY=발급받은_OpenWeatherMap_API_KEY
@@ -373,6 +374,16 @@ VITE_OPENTRIPMAP_API_KEY=발급받은_OpenTripMap_API_KEY
 
 ### Hosting: GitHub Pages
 
-GitHub Actions 자동 배포는 사용하지 않습니다. 로컬 `.env.local`에 API Key를 입력한 상태에서 `npm run build`를 실행하고, 생성된 `dist/` 내부 정적 파일을 GitHub Pages에 Hosting 됩니다. `.env.local`은 Git에 올리지 않으며, 공개된 웹 애플리케이션에서 사용하는 API Key에는 각 API 제공 사이트에서 허용 도메인과 사용량 제한을 설정합니다.
+`.github/workflows/deploy.yml`을 사용합니다. `main` Branch Push로 자동 실행하지 않고 GitHub의 Actions 화면에서 `Run workflow` 버튼을 눌렀을 때만 실행되는 수동 배포 방식입니다.
 
-GitHub Pages에 올릴 때는 저장소 경로에 맞는 Vite `base` 설정과 Vue Router 동적 경로의 새로고침을 위한 SPA fallback 설정을 확인해야 합니다.
+GitHub 저장소에서 다음 항목을 설정합니다.
+
+1. `Settings → Pages → Build and deployment → Source`를 `GitHub Actions`로 선택합니다.
+2. `Settings → Secrets and variables → Actions`에서 `New repository secret`을 선택합니다.
+3. `VITE_OPENWEATHER_API_KEY`와 `VITE_OPENTRIPMAP_API_KEY`를 각각 등록합니다.
+4. 소스 코드를 `main` Branch에 Push합니다.
+5. `Actions → Deploy to GitHub Pages → Run workflow → Run workflow`를 선택합니다.
+
+Workflow는 `npm ci`, `npm run build`를 실행하고 Vue Router 직접 접근을 위한 `404.html`을 만든 다음 `dist/`를 GitHub Pages에 배포합니다. 실제 API Key와 `.env.local`은 Git에 Commit하지 않습니다. `vite.config.js`의 `base`는 Project Pages 주소에 맞게 `/skala-vue/`로 설정했습니다.
+
+배포 주소는 `https://lizziegenie.github.io/skala-vue/`입니다. 정적 프런트엔드에서 사용하는 API Key는 배포된 JavaScript를 통해 확인될 수 있으므로 API 제공 사이트에서 사용량 제한 등의 보호 설정을 적용합니다.
